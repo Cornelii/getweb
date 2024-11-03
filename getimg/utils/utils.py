@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 
 def dir_check_and_create(path):
   """
@@ -24,3 +25,7 @@ def dir_check_and_create(path):
 def gen_seq(s):
     for a in range(s, s+10000000):
         yield a
+
+
+
+
