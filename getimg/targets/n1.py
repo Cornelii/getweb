@@ -66,7 +66,6 @@ class NVendor:
         ret_str = (
             f"{title}/{no} from {url}"
         )
-        print(ret_str)
 
         tags = get_tags(url, self.headers, self.pdict)
         

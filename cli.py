@@ -3,12 +3,6 @@ import click
 from getimg.utils.factory import TokenVendorStatusClassFactory
 from getimg.status.status import StatusDescriptor
 
-# sync, (title_id)
-
-# using selenium
-
-
-# add (with_sync) 
 
 @click.group()
 def itask():
@@ -19,33 +13,38 @@ def itask():
 def sync(title_id):
 
     sd = StatusDescriptor()
+    
     if title_id == '_':
         # preprocessing along with token type
         # sort by token_type
-
-        Token, Vendor, Status_checker = TokenVendorStatusClassFactory.get_tvs('ntoken')
-        title_id_list = []
-        
+        token_title_dict = {}
         for st in sd.status_list:
-            title_id_list.append(st.title_id)
+            if token_title_dict.get(st.token_type, None) is None:
+                token_title_dict[st.token_type] = [st.title_id]
+            else:
+                token_title_dict[st.token_type].append(st.title_id)
+
+        for token_type, title_id_list in token_title_dict.items():
+
+            Token, Vendor, Status_checker = TokenVendorStatusClassFactory.get_tvs(token_type)
+
+            current_list = Status_checker().get_current_with_title_ids(title_id_list)
+            tid_cur_dict = {k:v for k, v in zip(title_id_list, current_list)}
             
-
-        current_list = Status_checker().get_current_with_title_ids(title_id_list)
-        tid_cur_dict = {k:v for k, v in zip(title_id_list, current_list)}
-        
-        vendor = Vendor()
-        print(f"current_list: {current_list}")
-        print(f"sd.status_list: {sd.status_list}")
-        for st in sd.status_list:
-            until = tid_cur_dict.get(st.title_id,-1)
-            if until == -1: continue
-            if st.current == until: continue
-            if st.current < until:
-                for i in range(st.current+1, until+1):
-                    vendor.token = Token(st.title, st.title_id, i)
-                    vendor()
-                    sd.update_status(st.title_id, i)
-        sd.dump_status()
+            vendor = Vendor()
+            for st in sd.status_list:
+                print(f"{st.title} synchronizing")
+                until = tid_cur_dict.get(st.title_id,-1)
+                print(f"Found version: {until}")
+                if until == -1: continue
+                if st.current == until: continue
+                if st.current < until:
+                    
+                    for i in range(st.current+1, until+1):
+                        vendor.token = Token(st.title, st.title_id, i)
+                        vendor()
+                        sd.update_status(st.title_id, i)
+            sd.dump_status()
     else:
         raise NotImplemented("TODO")
         
@@ -65,7 +64,9 @@ def add(title, title_id, token_type, with_sync):
 
 @itask.command()
 def ls():
-    pass
+    sd = StatusDescriptor()
+    for st in sd.status_list:
+        print(st)
 
 if __name__ == "__main__":
     itask()
